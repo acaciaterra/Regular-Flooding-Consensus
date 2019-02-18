@@ -16,6 +16,7 @@ Orientador: Prof. Elias P. Duarte Jr.
 #include <algorithm>
 #include <iostream>
 #include <memory>
+#include <time.h>
 
 /*--------eventos--------*/
 #define test 1
@@ -265,11 +266,11 @@ void print_tests(){
 void verify (int recebeu){
 	int n, tamp;
 	bool resver, result;
-	printf("Correct this round na rodada %d para o nodo %d: \n", rodada, recebeu);
-	for(int i = 0; i < nodo[recebeu].correct_this_round[rodada].size(); i++){
-		printf("%d ", nodo[recebeu].correct_this_round[rodada][i]);
-	}
-	printf("\n");
+	// printf("Correct this round na rodada %d para o nodo %d: \n", rodada, recebeu);
+	// for(int i = 0; i < nodo[recebeu].correct_this_round[rodada].size(); i++){
+	// 	printf("%d ", nodo[recebeu].correct_this_round[rodada][i]);
+	// }
+	// printf("\n");
 	for(int i = 0; i < N; i++){
 		// printf("N:::::::::::::::::: %d\n", N);
 		// printf("Analisando o nodo %d...\n", i);
@@ -318,9 +319,9 @@ void verify (int recebeu){
 
 		if(result){
 			//os vetores sao iguais, entao pode decidir
-			printf("Vetores iguais\n");
+			// printf("Vetores iguais\n");
 			nodo[recebeu].decided = nodo[recebeu].proposal_set[rodada][0];
-			printf("**** O nodo %d vai decidir pelo valor %d\n", recebeu, nodo[recebeu].decided);
+			printf("[DECIDE] O nodo %d vai decidir pelo valor %d\n", recebeu, nodo[recebeu].decided);
 			//fazer broadcast da decisao
 
 			//armazena em mensagens todas as mensagens ja enviadas pelo broadcast,
@@ -363,13 +364,6 @@ void verify (int recebeu){
 			schedule(broadcast_round, 0.1, recebeu);
 
 		}
-		// if (nodo[recebeu].correct_this_round[rodada].size() == nodo[recebeu].correct_this_round[rodada-1].size()){
-		// 	for(int i = 0; i < nodo[recebeu].correct_this_round[rodada].size(); i++){
-		// 		if(nodo[recebeu].correct_this_round[rodada][i] != nodo[recebeu].correct_this_round[rodada-1][i]){
-		//
-		// 		}
-		// 	}
-		// }
 	}
 }
 
@@ -405,9 +399,6 @@ void freceive_round(int enviou, int recebeu){
 		if(comp == "myset" || comp == "myseT"){
 			//quando faz deliver do brcast de propose, atualiza os vetores do consenso
 
-			// nodo[recebeu].correct_this_round[rodada].push_back(msg_round[enviou].idorigem);
-
-			// std::cout << comp << "\n";
 			for(int i = 0; i < nodo[recebeu].correct_this_round[rodada - 1].size(); i++)
 				nodo[recebeu].correct_this_round[rodada].push_back(nodo[recebeu].correct_this_round[rodada - 1][i]);
 
@@ -430,32 +421,8 @@ void freceive_round(int enviou, int recebeu){
 					// printf(">>>>>>>>>>>>>> %d\n", val);
 				}
 			}
-			// printf("Tinha que chamar a verify\n");
 			verify(recebeu);
 		}
-		/*
-		else if(comp == "decid"){
-			//quando faz brcast de decisao, apenas propaga a decisao para os outros nodos
-			//mas apenas se pi esta correto e ainda nao decidiu
-			if(status(nodo[recebeu].id == 0) && nodo[recebeu].decided == -1){
-				nodo[recebeu].decided = nodo[enviou].decided;
-				// printf("##### nodo %d decidiu pelo valor %d, recebido do nodo %d\n", recebeu, nodo[recebeu].decided, enviou);
-
-				//armazena em mensagens todas as mensagens ja enviadas pelo broadcast,
-				//contendo o id de origem e o timestamp (unico para cada mensagem)
-				//--- transforma a string em um tmsg ---
-				mensagens.push_back(tmsg{'T', "decid " + std::to_string(nodo[recebeu].decided), nodo[recebeu].idr, timestamp});
-				tamp = mensagens.size()-1;
-				// std::cout << "Mensagem armazenada::::::::::::::::::" << mensagens[mensagens.size()-1].m << "\n";
-
-				// rodada = 0;
-				nodo_token = recebeu;
-				//incrementa o timestamp sempre que gera uma nova mensagem
-				timestamp++;
-				schedule(broadcast, 0.1, recebeu);
-			}
-		}
-		*/
 
 		if(status(nodo[msg_round[enviou].idorigem].id) != 0){
 			// std::cout <<"Fazendo novo broadcast para os vizinhos sem-falha... " << "\n";
@@ -533,37 +500,11 @@ void freceive_dec(int enviou, int recebeu){
 			// std::cout << "-----------------" << comp[i] << "\n";
 		}
 
-/*
-		if(comp == "myset" || comp == "myseT"){
-			//quando faz deliver do brcast de propose, atualiza os vetores do consenso
-			nodo[recebeu].correct_this_round[rodada].push_back(msg_decide[enviou].idorigem);
-			//unir o meu proposal_set com o de quem me enviou
-			//percorrer o proposal_set de quem enviou, verificando se já tem no de quem recebeu
-			//ou nao, se nao tiver entao adiciona
-			for(int contador = 0; contador < nodo[enviou].proposal_set[comp == "myset" ? rodada : rodada - 1].size(); contador++){
-				//existe algum o valor do proposal_set de quem enviou no proposal_set de quem recebeu?
-				//retorna true, caso exista
-				val = nodo[enviou].proposal_set[comp == "myset" ? rodada : rodada - 1][contador];
-				// printf("AAAAAAAAAAAAAA %d\n", val);
-				rescon = std::any_of(nodo[recebeu].proposal_set[comp == "myset" ? rodada : rodada - 1].begin(), nodo[recebeu].proposal_set[comp == "myset" ? rodada : rodada - 1].end(), [val] (auto const &elem){
-					return elem == val;
-				});
-
-				if(!rescon){
-					// printf("%d - nao existe no meu proposal_set (%d)\n", recebeu, val);
-					//adiciona o valor ao meu proposal_set, pois acabei de recebe-lo
-					nodo[recebeu].proposal_set[comp == "myset" ? rodada : rodada - 1].push_back(val);
-				}
-			}
-
-			verify(recebeu);
-		} else
-		*/
-		 if(comp == "decid"){
+		if(comp == "decid"){
 			//quando faz brcast de decisao, apenas propaga a decisao para os outros nodos
 			//mas apenas se pi esta correto e ainda nao decidiu
 			if(status(nodo[recebeu].id == 0) && nodo[recebeu].decided == -1){
-				printf("*** O nodo %d decide pelo valor %d que foi recebido do nodo %d\n", recebeu, nodo[enviou].decided, enviou);
+				printf("[DECIDE] O nodo %d decide pelo valor %d que foi recebido do nodo %d\n", recebeu, nodo[enviou].decided, enviou);
 				nodo[recebeu].decided = nodo[enviou].decided;
 				// printf("##### nodo %d decidiu pelo valor %d, recebido do nodo %d\n", recebeu, nodo[recebeu].decided, enviou);
 
@@ -685,32 +626,8 @@ void freceive(int enviou, int recebeu){
 					nodo[recebeu].proposal_set[comp == "myset" ? rodada : rodada - 1].push_back(val);
 				}
 			}
-			// printf("Tinha que chamar a verify\n");
 			verify(recebeu);
 		}
-		/*
-		else if(comp == "decid"){
-			//quando faz brcast de decisao, apenas propaga a decisao para os outros nodos
-			//mas apenas se pi esta correto e ainda nao decidiu
-			if(status(nodo[recebeu].id == 0) && nodo[recebeu].decided == -1){
-				nodo[recebeu].decided = nodo[enviou].decided;
-				// printf("##### nodo %d decidiu pelo valor %d, recebido do nodo %d\n", recebeu, nodo[recebeu].decided, enviou);
-
-				//armazena em mensagens todas as mensagens ja enviadas pelo broadcast,
-				//contendo o id de origem e o timestamp (unico para cada mensagem)
-				//--- transforma a string em um tmsg ---
-				mensagens.push_back(tmsg{'T', "decid " + std::to_string(nodo[recebeu].decided), nodo[recebeu].idr, timestamp});
-				tamp = mensagens.size()-1;
-				// std::cout << "Mensagem armazenada::::::::::::::::::" << mensagens[mensagens.size()-1].m << "\n";
-
-				// rodada = 0;
-				nodo_token = recebeu;
-				//incrementa o timestamp sempre que gera uma nova mensagem
-				timestamp++;
-				schedule(broadcast, 0.1, recebeu);
-			}
-		}
-		*/
 
 		if(status(nodo[msg_propose[enviou].idorigem].id) != 0){
 			// std::cout <<"Fazendo novo broadcast para os vizinhos sem-falha... " << "\n";
@@ -868,17 +785,25 @@ void print_state(std:: vector<tnodo> &nodo, int n){
 
 void print_init(){
 	printf ("===========================================================\n");
-	printf ("         Execucao do algoritmo V-Cube\n");
+	printf ("         Execucao do Regular Flooding Consensus\n");
 	printf ("         Aluna: Acacia dos Campos da Terra\n");
 	printf ("         Professor: Elias P. Duarte Jr.\n");
 	printf ("===========================================================\n\n");
 }
 
 void print_end(int r, int n){
+	int d;
 	//apos o fim do tempo, printa os vetores states
 	printf("\n--------------------------------------------------------------\n");
 	printf("                       RESULTADOS\n");
 	printf("\nNúmero de rodadas total do programa: %d\n", r);
+
+	for(int i = 0; i < N; i++)
+		if(status(nodo[i].id) == 0)
+			d = nodo[i].decided;
+
+	printf("\nTodos os nodos decidiram pelo valor >>%d<<\n", d);
+
 	printf("\nVetor STATE ao final do diagnostico:\n");
 	print_state(nodo, n);
 }
@@ -891,6 +816,7 @@ int main(int argc, char const *argv[]) {
 	bool res, resb = true;
 	int idx = -1;
 
+	srand(time(NULL));
 //-------variáveis dos eventos passados por arquivo---------
 	char evento[7];
 	int processo;
@@ -990,6 +916,7 @@ int main(int argc, char const *argv[]) {
 
 	aux = N;
 	 printf("Programa inicializa - todos os nodos estao *sem-falha*\n");
+	 printf("\n---------------------- Inicio da rodada %d -----------------------\n\n", rodada);
 	 for(s = 0; aux != 1; aux /= 2, s++);//for para calcular o valor de S (log de n)
 	 tests = testes(N, s, nodo); //calcula quais os testes executados
 	//  for(i = 0; i < N; i++){//printa os testes executados por cada nodo, apos ser calculado
@@ -1085,7 +1012,7 @@ int main(int argc, char const *argv[]) {
 				totalrodadas++;//aumenta as rodadas do programa todo
 				if(logtype)
 					print_state(nodo, N);
-				printf("\t------ Fim da rodada %d ------\n", totalrodadas);
+				// printf("\t------ Fim da rodada %d ------\n", totalrodadas);
 
 				if (i == N && end == 1){
 					//todos os vetores SEM-FALHA foram comparados e sao iguais
@@ -1294,8 +1221,8 @@ int main(int argc, char const *argv[]) {
 				//para a contagem de rodadas ficar certa
 
 				int v;
-				v = rand() % 50;
-				printf("---> O nodo %d propos o valor: %d\n", token, v);
+				v = rand() % 80;
+				printf("\n[PROPOSE] O nodo %d propos o valor: %d\n\n", token, v);
 				nodo[token].proposal_set[1].push_back(v);
 
 				//faz broadcast informando qual o nodo token
@@ -1328,6 +1255,8 @@ int main(int argc, char const *argv[]) {
 			case broadcast_round:
 			resb = true;
 			//if source(m) == i
+			rodada++;
+			printf("\n---------------------- Inicio da rodada %d -----------------------\n\n", rodada);
 			if(msg_round[token].idorigem == token && status(nodo[token].id) == 0){
 				//isso aqui não vai gerar look infinito não? HAHAHAHAHAHAHAHAHAH
 				while(resb){
@@ -1348,7 +1277,7 @@ int main(int argc, char const *argv[]) {
 				std::cout <<"[DELIVER] mensagem \"" << nodo[token].last[token].m << "\" foi entregue para a aplicacao pelo processo " << token << "\n\n";
 
 			}
-			rodada++;
+
 			//enviar a todos os vizinhos corretos que pertencem ao cluster s
 			for(int i = 0; i < N; i ++){
 				for(int j = 0; j < tests[i].size; j++){
@@ -1366,7 +1295,7 @@ int main(int argc, char const *argv[]) {
 	 	}
 	}
 
-	print_end(totalrodadas, N);
+	print_end(rodada, N);
 
 	return 0;
 }
